@@ -76,7 +76,7 @@ function initializeDateRangeDropdowns() {
         toDaySelect.appendChild(optionTo);
     }
 }
-
+        
 // Select calculation mode
 function selectMode(mode) {
     document.querySelectorAll('.radio-option').forEach(option => {
@@ -92,7 +92,7 @@ function selectMode(mode) {
     document.querySelector(`#${mode}`).parentElement.querySelector('.radio-indicator').innerHTML = 
         '<div class="w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center"><i class="fas fa-check text-white text-xs"></i></div>';
 }
-
+        
 // Calculate time difference between two Panchang dates
 function calculateTimeDifference(fromYear, fromMonth, fromDay, toYear, toMonth, toDay) {
     let years = toYear - fromYear;
@@ -112,7 +112,7 @@ function calculateTimeDifference(fromYear, fromMonth, fromDay, toYear, toMonth, 
     }
     return { years, months, days };
 }
-
+        
 // Validate inputs
 function validateInputs() {
     let isValid = true;
@@ -130,20 +130,15 @@ function validateInputs() {
         isValid = false;
     }
     
-    // If date range is not selected, validate manual time period
-    if (!selectedDateRange) {
-        const years = parseInt(document.getElementById('years').value) || 0;
-        const months = parseInt(document.getElementById('months').value) || 0;
-        if (years === 0 && months === 0) {
-            document.getElementById('timeError').textContent = 'Please enter at least some time period or select a date range';
-            document.getElementById('timeError').classList.remove('hidden');
-            isValid = false;
-        }
-    } else {
-         // Clear manual time period error if date range is selected
-         document.getElementById('timeError').classList.add('hidden');
+    // Validate time period
+    const years = parseInt(document.getElementById('years').value) || 0;
+    const months = parseInt(document.getElementById('months').value) || 0;
+    if (years === 0 && months === 0) {
+        document.getElementById('timeError').textContent = 'Please enter at least some time period or select a date range';
+        document.getElementById('timeError').classList.remove('hidden');
+        isValid = false;
     }
-
+    
     // Validate interest rate
     const rate = parseFloat(document.getElementById('interestRate').value);
     if (rate === '' || rate < 0) {
@@ -162,7 +157,7 @@ function validateInputs() {
     
     return isValid;
 }
-
+        
 // Calculate simple interest
 function calculateSimpleInterest(principal, rate, years, months) {
     const totalMonths = years * 12 + months;
@@ -173,7 +168,7 @@ function calculateSimpleInterest(principal, rate, years, months) {
         breakdown: [`Total Interest for ${years} years ${months} months: ₹${interest.toFixed(2)}`]
     };
 }
-
+        
 // Calculate custom step-wise interest
 function calculateCustomInterest(principal, rate, years, months) {
     let currentPrincipal = principal;
@@ -201,7 +196,7 @@ function calculateCustomInterest(principal, rate, years, months) {
         breakdown: breakdown
     };
 }
-
+        
 // Display results
 function displayResults(result, principal, rate, years, months, mode, days = 0) {
     const resultContent = document.getElementById('resultContent');
@@ -254,7 +249,7 @@ function displayResults(result, principal, rate, years, months, mode, days = 0) 
     // Scroll to results
     document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-
+        
 // Handle form submission
 document.getElementById('calculatorForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -266,15 +261,14 @@ document.getElementById('calculatorForm').addEventListener('submit', function(e)
     const principal = parseFloat(document.getElementById('principal').value);
     const rate = parseFloat(document.getElementById('interestRate').value);
     const mode = document.querySelector('input[name="calculationMode"]:checked').value;
-    
-    let years = parseInt(document.getElementById('years').value) || 0;
-    let months = parseInt(document.getElementById('months').value) || 0;
-    let days = 0;
 
-    // Check if Date Range is set
+    // Always read values directly from the input fields for calculation
+    const years = parseInt(document.getElementById('years').value) || 0;
+    const months = parseInt(document.getElementById('months').value) || 0;
+    
+    // Days will be used for display, if a date range was selected
+    let days = 0;
     if (selectedDateRange) {
-        years = selectedDateRange.years;
-        months = selectedDateRange.months;
         days = selectedDateRange.days;
     }
     
