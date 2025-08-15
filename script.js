@@ -365,7 +365,7 @@ function App() {
         <div className="animate-fadeIn min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-500">
                 <button
-                    onClick={() => window.open('https://ntqueprince.github.io/calculate/', '_blank')}
+                    onClick={() => window.open('https://ntqueprince.github.io/cal/', '_blank')}
                     className="w-full mb-6 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg"
                 >
                     Open Interest Calculator
@@ -977,3 +977,4 @@ function App() {
 }
 
 ReactDOM.render(<App />, document.getElementById('root'));
+
