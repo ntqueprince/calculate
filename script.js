@@ -1,10 +1,11 @@
 const { useState, useEffect, useRef } = React;
 
-// Initialize Supabase client here
+// Supabase क्लाइंट को यहाँ इनिशियलाइज़ करें
 const { createClient } = supabase;
-const supabaseUrl = 'https://nraoiasjbifimoljziqi.supabase.co';
+const supabaseUrl = 'https://nraoiasjbifimoljziqi.supabase.co'; 
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yYW9pYXNqYmlmaW1vbGp6aXFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyMzMwNjIsImV4cCI6MjA3MDgwOTA2Mn0.VOslmpc2xNK6nklwAgEjvvybMuiPbJPHDahKfQdBTdo';
 const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+
 
 const months = [
     { en: "Chait", hi: "चैत" },
@@ -33,26 +34,29 @@ const pakshas = [
     { en: "Badi", hi: "(बदी)" }
 ];
 
+
 function App() {
     const [currentView, setCurrentView] = useState('login');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [popupMessage, setPopupMessage] = useState('');
     const [allEntries, setAllEntries] = useState([]);
-
+    
+    // New state for handling new entry form data
     const [newEntryFormData, setNewEntryFormData] = useState({
         customer_name: '',
-        comment: '',
+        comment: '', 
         village: '',
         mobile: '',
-        amount: '',
+        amount: '', 
         year: '',
         month: '',
         paksha: '',
         tithi: '',
     });
-
+    // State to manage multiple items in new entry
     const [newEntryItems, setNewEntryItems] = useState([{ itemType: '', itemName: '', weight: '' }]);
+
 
     const [filters, setFilters] = useState({
         customerName: '',
@@ -68,10 +72,12 @@ function App() {
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
 
+    // State for the item details popup
     const [showItemDetails, setShowItemDetails] = useState(false);
-    const [currentItemNamesAndWeights, setCurrentItemNamesAndWeights] = useState([]);
-    const modalRef = useRef(null);
+    const [currentItemNamesAndWeights, setCurrentItemNamesAndWeights] = useState([]); // State for item names and their weights
+    const modalRef = useRef(null); // Ref to the modal content for outside click detection
 
+    // Fetch data from Supabase
     const fetchEntries = async () => {
         const { data, error } = await supabaseClient.from('customers').select('*');
         if (error) {
@@ -82,6 +88,7 @@ function App() {
         }
     };
 
+    // Check auth session on app load
     useEffect(() => {
         const checkSession = async () => {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -111,7 +118,7 @@ function App() {
     }, []);
 
     const filteredData = allEntries.filter(item => {
-        const itemMatches = item.items.some(singleItem =>
+        const itemMatches = item.items.some(singleItem => 
             filters.itemName === '' || (singleItem.itemName && singleItem.itemName.toLowerCase().includes(filters.itemName.toLowerCase()))
         );
 
@@ -120,10 +127,10 @@ function App() {
             (filters.village === '' || (item.village && item.village.toLowerCase().includes(filters.village.toLowerCase()))) &&
             (filters.itemType === '' || (item.items && item.items.some(singleItem => singleItem.itemType === filters.itemType))) &&
             itemMatches &&
-            (filters.year === '' || item.year === filters.year) &&
+            (filters.year === '' || item.year === Number(filters.year)) &&
             (filters.month === '' || item.month === filters.month) &&
             (filters.paksha === '' || item.paksha === filters.paksha) &&
-            (filters.tithi === '' || item.tithi === filters.tithi)
+            (filters.tithi === '' || item.tithi === Number(filters.tithi))
         );
     });
 
@@ -147,7 +154,7 @@ function App() {
             showPopupMessage('Login Successful!');
         }
     };
-
+    
     const handleSignUp = async (e) => {
         e.preventDefault();
         const email = e.target.email.value;
@@ -249,13 +256,13 @@ function App() {
             ...newEntryFormData,
             items: newEntryItems,
         };
-
+        
         if (isEditing) {
             const { error } = await supabaseClient
                 .from('customers')
                 .update(completeEntryData)
                 .eq('id', editId);
-
+            
             if (error) {
                 console.error("Error updating entry:", error);
                 showPopupMessage('Error updating record!', true);
@@ -272,7 +279,7 @@ function App() {
             }
         } else {
             const { error } = await supabaseClient.from('customers').insert([completeEntryData]);
-
+    
             if (error) {
                 console.error("Error saving entry:", error);
                 showPopupMessage('Error saving record!', true);
@@ -286,7 +293,7 @@ function App() {
             }
         }
     };
-
+    
     const handleCancelEdit = () => {
         setNewEntryFormData({ customer_name: '', comment: '', village: '', mobile: '', amount: '', year: '', month: '', paksha: '', tithi: '' });
         setNewEntryItems([{ itemType: '', itemName: '', weight: '' }]);
@@ -824,24 +831,23 @@ function App() {
                                     <th className="p-4 text-left">Customer</th>
                                     <th className="p-4 text-left">Village/City</th>
                                     <th className="p-4 text-left">Item Name</th>
-                                    <th className="p-4 text-left">Weight (g)</th>
+                                    <th className="p-4 text-center">Weight (g)</th>
                                     <th className="p-4 text-left">Amount</th>
                                     <th className="p-4 text-left">Date</th>
                                     <th className="p-4 text-left">Item Type</th>
                                     <th className="p-4 text-left">Comment</th>
-                                    <th className="p-4 text-left">Mobile</th>
                                     <th className="p-4 text-left">Actions</th>
+                                    <th className="p-4 text-left">Mobile</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredData.map((item, index) => {
                                     const displayItems = item.items.slice(0, 2).map(i => i.itemName);
                                     const hasMoreItems = item.items.length > 2;
-
                                     const displayItemType = item.items.length > 1 && new Set(item.items.map(i => i.itemType)).size > 1
                                                             ? 'Mixed'
                                                             : item.items[0]?.itemType || '';
-
+                                    
                                     let totalGoldWeight = 0;
                                     let totalSilverWeight = 0;
                                     item.items.forEach(singleItem => {
@@ -883,7 +889,7 @@ function App() {
                                                     </button>
                                                 )}
                                             </td>
-                                            <td className="p-4 font-semibold text-green-600">{weightDisplay}</td>
+                                            <td className="p-4 font-semibold text-green-600 text-center">{weightDisplay}</td>
                                             <td className="p-4 font-semibold text-purple-600">₹{item.amount.toLocaleString()}</td>
                                             <td className="p-4">
                                                 <div className="text-sm">
@@ -899,7 +905,6 @@ function App() {
                                                 </span>
                                             </td>
                                             <td className="p-4 text-gray-600">{item.comment}</td>
-                                            <td className="p-4 text-gray-600">{item.mobile}</td>
                                             <td className="p-4">
                                                 <button
                                                     onClick={() => startEdit(item)}
@@ -914,6 +919,7 @@ function App() {
                                                     <i className="fas fa-trash-alt"></i> Delete
                                                 </button>
                                             </td>
+                                            <td className="p-4 text-gray-600">{item.mobile}</td>
                                         </tr>
                                     );
                                 })}
@@ -957,7 +963,7 @@ function App() {
             {currentView === 'dashboard' && renderDashboard()}
             {currentView === 'newEntry' && renderNewEntry()}
             {currentView === 'viewEntries' && renderViewEntries()}
-
+            
             {showPopup && (
                 <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideIn">
                     <i className="fas fa-check-circle mr-2"></i>
