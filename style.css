@@ -1,86 +1,58 @@
-* {
-    font-family: 'Inter', sans-serif;
-}
-
 .gradient-bg {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
 }
-
-.card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+.gold-gradient {
+    background: linear-gradient(45deg, #ffd700, #ffb347);
+    color: #8b4513;
 }
-
-.gradient-btn {
+.silver-gradient {
+    background: linear-gradient(45deg, #c0c0c0, #a8a8a8);
+    color: #4a4a4a;
+}
+.customer-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transform: translateY(0);
     transition: all 0.3s ease;
 }
-
-.gradient-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+.customer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
 }
-
-.input-field {
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    background: white;
+.item-badge-gold {
+    background: linear-gradient(45deg, #ffd700, #ffb347);
+    color: #8b4513;
 }
-
-.input-field:focus {
-    border-color: #667eea;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.item-badge-silver {
+    background: linear-gradient(45deg, #c0c0c0, #a8a8a8);
+    color: #4a4a4a;
 }
-
-.radio-option {
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+.item-badge-mixed {
+    background: linear-gradient(45deg, #20B2AA, #87CEEB); /* Light Sea Green to Sky Blue */
+    color: #000;
 }
-
-.radio-option:hover {
-    border-color: #667eea;
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-in;
 }
-
-.radio-option.selected {
-    border-color: #667eea;
-    background: rgba(102, 126, 234, 0.1);
+.animate-slideIn {
+    animation: slideIn 0.3s ease-out;
 }
-
-.result-box {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    border-radius: 16px;
-    padding: 20px;
-    margin-top: 20px;
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
-
-.breakdown-item {
-    background: white;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 8px;
-    border-left: 4px solid #667eea;
+@keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
-
-.error-message {
-    color: #ef4444;
-    font-size: 14px;
-    margin-top: 4px;
+.filter-card {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
 }
-
-@media (max-width: 480px) {
-    .card {
-        margin: 10px;
-        border-radius: 16px;
-    }
+.entry-form-bg {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+.dashboard-card {
+    background: linear-gradient(135deg, #ff9a56 0%, #ff6b95 100%);
+}
+.table-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
