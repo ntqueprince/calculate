@@ -1,11 +1,10 @@
 const { useState, useEffect, useRef } = React;
 
-// Supabase क्लाइंट को यहाँ इनिशियलाइज़ करें
+// Initialize Supabase client here
 const { createClient } = supabase;
-const supabaseUrl = 'https://nraoiasjbifimoljziqi.supabase.co'; 
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yYW9pYXNqYmlmaW1vbGp6aXFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyMzMwNjIsImV4cCI6MjA3MDgwOTA2Mn0.VOslmpc2xNK6nklwAgEjvvybMuiPbJPHDahKfQdBTdo'; // This key is from your screenshot
+const supabaseUrl = 'https://nraoiasjbifimoljziqi.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yYW9pYXNqYmlmaW1vbGp6aXFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyMzMwNjIsImV4cCI6MjA3MDgwOTA2Mn0.VOslmpc2xNK6nklwAgEjvvybMuiPbJPHDahKfQdBTdo';
 const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-
 
 const months = [
     { en: "Chait", hi: "चैत" },
@@ -34,29 +33,26 @@ const pakshas = [
     { en: "Badi", hi: "(बदी)" }
 ];
 
-
 function App() {
     const [currentView, setCurrentView] = useState('login');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [popupMessage, setPopupMessage] = useState('');
     const [allEntries, setAllEntries] = useState([]);
-    
-    // New state for handling new entry form data
+
     const [newEntryFormData, setNewEntryFormData] = useState({
         customer_name: '',
-        comment: '', 
+        comment: '',
         village: '',
         mobile: '',
-        amount: '', 
+        amount: '',
         year: '',
         month: '',
         paksha: '',
         tithi: '',
     });
-    // State to manage multiple items in new entry
-    const [newEntryItems, setNewEntryItems] = useState([{ itemType: '', itemName: '', weight: '' }]);
 
+    const [newEntryItems, setNewEntryItems] = useState([{ itemType: '', itemName: '', weight: '' }]);
 
     const [filters, setFilters] = useState({
         customerName: '',
@@ -69,12 +65,13 @@ function App() {
         tithi: ''
     });
 
-    // State for the item details popup
-    const [showItemDetails, setShowItemDetails] = useState(false);
-    const [currentItemNamesAndWeights, setCurrentItemNamesAndWeights] = useState([]); // State for item names and their weights
-    const modalRef = useRef(null); // Ref to the modal content for outside click detection
+    const [isEditing, setIsEditing] = useState(false);
+    const [editId, setEditId] = useState(null);
 
-    // Fetch data from Supabase
+    const [showItemDetails, setShowItemDetails] = useState(false);
+    const [currentItemNamesAndWeights, setCurrentItemNamesAndWeights] = useState([]);
+    const modalRef = useRef(null);
+
     const fetchEntries = async () => {
         const { data, error } = await supabaseClient.from('customers').select('*');
         if (error) {
@@ -85,7 +82,6 @@ function App() {
         }
     };
 
-    // Check auth session on app load
     useEffect(() => {
         const checkSession = async () => {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -115,7 +111,7 @@ function App() {
     }, []);
 
     const filteredData = allEntries.filter(item => {
-        const itemMatches = item.items.some(singleItem => 
+        const itemMatches = item.items.some(singleItem =>
             filters.itemName === '' || (singleItem.itemName && singleItem.itemName.toLowerCase().includes(filters.itemName.toLowerCase()))
         );
 
@@ -151,7 +147,7 @@ function App() {
             showPopupMessage('Login Successful!');
         }
     };
-    
+
     const handleSignUp = async (e) => {
         e.preventDefault();
         const email = e.target.email.value;
@@ -172,7 +168,7 @@ function App() {
         e.preventDefault();
         const email = e.target.email.value;
         const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-            redirectTo: 'https://your-domain.com/update-password', // Replace with your actual password reset page URL
+            redirectTo: 'https://your-domain.com/update-password',
         });
         if (error) {
             showPopupMessage(error.message, true);
@@ -191,13 +187,11 @@ function App() {
         }
     };
 
-    // Handle input changes for the new entry form fields
     const handleNewEntryChange = (e) => {
         const { name, value } = e.target;
         setNewEntryFormData({ ...newEntryFormData, [name]: value });
     };
 
-    // Handle input changes for individual item fields
     const handleNewItemChange = (index, field, value) => {
         const updatedItems = newEntryItems.map((item, i) =>
             i === index ? { ...item, [field]: value } : item
@@ -205,14 +199,43 @@ function App() {
         setNewEntryItems(updatedItems);
     };
 
-    // Add a new item entry
     const handleAddItem = () => {
         setNewEntryItems([...newEntryItems, { itemType: '', itemName: '', weight: '' }]);
     };
 
-    // Remove an item entry
     const handleRemoveItem = (indexToRemove) => {
         setNewEntryItems(newEntryItems.filter((_, index) => index !== indexToRemove));
+    };
+
+    const startEdit = (item) => {
+        setNewEntryFormData({
+            customer_name: item.customer_name,
+            comment: item.comment || '',
+            village: item.village,
+            mobile: item.mobile || '',
+            amount: item.amount || '',
+            year: item.year,
+            month: item.month,
+            paksha: item.paksha,
+            tithi: item.tithi,
+        });
+        setNewEntryItems(item.items ? JSON.parse(JSON.stringify(item.items)) : [{ itemType: '', itemName: '', weight: '' }]);
+        setIsEditing(true);
+        setEditId(item.id);
+        setCurrentView('newEntry');
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this record?')) {
+            const { error } = await supabaseClient.from('customers').delete().eq('id', id);
+            if (error) {
+                console.error('Error deleting record:', error);
+                showPopupMessage('Error deleting record!', true);
+            } else {
+                showPopupMessage('Record deleted!');
+                fetchEntries();
+            }
+        }
     };
 
     const handleSaveEntry = async () => {
@@ -226,29 +249,50 @@ function App() {
             ...newEntryFormData,
             items: newEntryItems,
         };
-        
-        const { error } = await supabaseClient.from('customers').insert([completeEntryData]);
 
-        if (error) {
-            console.error("Error saving entry:", error);
-            showPopupMessage('Error saving record!', true);
+        if (isEditing) {
+            const { error } = await supabaseClient
+                .from('customers')
+                .update(completeEntryData)
+                .eq('id', editId);
+
+            if (error) {
+                console.error("Error updating entry:", error);
+                showPopupMessage('Error updating record!', true);
+            } else {
+                showPopupMessage('Record Updated!');
+                fetchEntries();
+                setNewEntryFormData({
+                    customer_name: '', comment: '', village: '', mobile: '', amount: '', year: '', month: '', paksha: '', tithi: '',
+                });
+                setNewEntryItems([{ itemType: '', itemName: '', weight: '' }]);
+                setIsEditing(false);
+                setEditId(null);
+                setCurrentView('viewEntries');
+            }
         } else {
-            showPopupMessage('Entry Saved!');
-            fetchEntries(); // Refresh the data after a successful save
-            // Reset form and items array to default state
-            setNewEntryFormData({
-                customer_name: '',
-                comment: '', 
-                village: '',
-                mobile: '',
-                amount: '',
-                year: '',
-                month: '',
-                paksha: '',
-                tithi: '',
-            });
-            setNewEntryItems([{ itemType: '', itemName: '', weight: '' }]);
+            const { error } = await supabaseClient.from('customers').insert([completeEntryData]);
+
+            if (error) {
+                console.error("Error saving entry:", error);
+                showPopupMessage('Error saving record!', true);
+            } else {
+                showPopupMessage('Entry Saved!');
+                fetchEntries();
+                setNewEntryFormData({
+                    customer_name: '', comment: '', village: '', mobile: '', amount: '', year: '', month: '', paksha: '', tithi: '',
+                });
+                setNewEntryItems([{ itemType: '', itemName: '', weight: '' }]);
+            }
         }
+    };
+
+    const handleCancelEdit = () => {
+        setNewEntryFormData({ customer_name: '', comment: '', village: '', mobile: '', amount: '', year: '', month: '', paksha: '', tithi: '' });
+        setNewEntryItems([{ itemType: '', itemName: '', weight: '' }]);
+        setIsEditing(false);
+        setEditId(null);
+        setCurrentView('viewEntries');
     };
 
     const resetFilters = () => {
@@ -264,21 +308,18 @@ function App() {
         });
     };
 
-    // Handle View More click, now includes weight
-    const handleViewMoreClick = (itemsArray) => { // itemsArray is now directly passed
-        const itemsWithWeight = itemsArray.map(item => `${item.itemName} (${item.weight}g)`); 
+    const handleViewMoreClick = (itemsArray) => {
+        const itemsWithWeight = itemsArray.map(item => `${item.itemName} (${item.weight}g)`);
         setCurrentItemNamesAndWeights(itemsWithWeight);
         setShowItemDetails(true);
     };
 
-    // Function to handle clicks outside the modal
     const handleOutsideClick = (event) => {
         if (modalRef.current && !modalRef.current.contains(event.target)) {
             setShowItemDetails(false);
         }
     };
 
-    // Add event listener when modal is shown, remove when hidden
     useEffect(() => {
         if (showItemDetails) {
             document.addEventListener('mousedown', handleOutsideClick);
@@ -286,24 +327,23 @@ function App() {
             document.removeEventListener('mousedown', handleOutsideClick);
         }
 
-        // Cleanup function to remove event listener when component unmounts or showItemDetails changes
         return () => {
             document.removeEventListener('mousedown', handleOutsideClick);
         };
-    }, [showItemDetails]); // Dependency array: run this effect when showItemDetails changes
+    }, [showItemDetails]);
 
     const renderHeader = () => (
         <header className="gradient-bg text-white p-4 shadow-lg">
-            <div className="flex justify-between items-center relative"> {/* Added relative for positioning */}
-                <div className="flex flex-col items-start"> {/* Changed to flex-col and items-start */}
-                    <p className="text-xs text-gray-200 mb-1">Created by Shivang</p> {/* Added "Created by Shivang" */}
+            <div className="flex justify-between items-center relative">
+                <div className="flex flex-col items-start">
+                    <p className="text-xs text-gray-200 mb-1">Created by Shivang</p>
                     <div className="flex items-center space-x-2">
                         <i className="fas fa-gem text-2xl"></i>
                         <h1 className="text-xl font-bold">Jewelry Records</h1>
                     </div>
                 </div>
                 {isLoggedIn && (
-                    <button 
+                    <button
                         onClick={handleLogout}
                         className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105"
                     >
@@ -317,13 +357,12 @@ function App() {
     const renderLogin = () => (
         <div className="animate-fadeIn min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-500">
-                {/* New button to open the interest calculator */}
                 <button
-    onClick={() => window.open('https://ntqueprince.github.io/calculate/', '_blank')}
-    className="w-full mb-6 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg"
->
-    Open Interest Calculator
-</button>
+                    onClick={() => window.open('https://ntqueprince.github.io/calculate/', '_blank')}
+                    className="w-full mb-6 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg"
+                >
+                    Open Interest Calculator
+                </button>
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div className="text-center mb-8">
@@ -333,8 +372,8 @@ function App() {
                     </div>
                     <div className="relative">
                         <i className="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             name="email"
                             placeholder="Email"
                             className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300"
@@ -343,29 +382,29 @@ function App() {
                     </div>
                     <div className="relative">
                         <i className="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input 
-                            type="password" 
+                        <input
+                            type="password"
                             name="password"
                             placeholder="Password"
                             className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300"
                             required
                         />
                     </div>
-                    <button 
+                    <button
                         type="submit"
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
                     >
                         <i className="fas fa-sign-in-alt mr-2"></i>Login
                     </button>
                     <div className="flex justify-between text-sm">
-                        <button 
+                        <button
                             type="button"
                             onClick={() => setCurrentView('signup')}
                             className="text-purple-600 hover:text-purple-800 font-medium transition-colors duration-300"
                         >
                             Sign Up
                         </button>
-                        <button 
+                        <button
                             type="button"
                             onClick={() => setCurrentView('forgot')}
                             className="text-purple-600 hover:text-purple-800 font-medium transition-colors duration-300"
@@ -388,13 +427,13 @@ function App() {
                 <form onSubmit={handleSignUp} className="space-y-4">
                     <input type="email" name="email" placeholder="Email" className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-all duration-300" required/>
                     <input type="password" name="password" placeholder="Password" className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-all duration-300" required/>
-                    <button 
+                    <button
                         type="submit"
                         className="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-300"
                     >
                         Sign Up
                     </button>
-                    <button 
+                    <button
                         type="button"
                         onClick={() => setCurrentView('login')}
                         className="w-full text-gray-600 hover:text-gray-800 transition-colors duration-300"
@@ -415,13 +454,13 @@ function App() {
                 </div>
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                     <input type="email" name="email" placeholder="Email" className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none transition-all duration-300" required/>
-                    <button 
+                    <button
                         type="submit"
                         className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-red-700 transform hover:scale-105 transition-all duration-300"
                     >
                         Reset Password
                     </button>
-                    <button 
+                    <button
                         type="button"
                         onClick={() => setCurrentView('login')}
                         className="w-full text-gray-600 hover:text-gray-800 transition-colors duration-300"
@@ -444,7 +483,7 @@ function App() {
                     <p className="text-white text-lg">Manage your jewelry records efficiently</p>
                 </div>
                 <div className="grid md:grid-cols-2 gap-6">
-                    <div 
+                    <div
                         onClick={() => setCurrentView('newEntry')}
                         className="dashboard-card rounded-3xl p-8 text-white cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-3xl"
                     >
@@ -454,7 +493,7 @@ function App() {
                             <p className="text-lg opacity-90">Add new jewelry record</p>
                         </div>
                     </div>
-                    <div 
+                    <div
                         onClick={() => setCurrentView('viewEntries')}
                         className="dashboard-card rounded-3xl p-8 text-white cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-3xl"
                     >
@@ -476,18 +515,17 @@ function App() {
                 <div className="bg-white rounded-3xl shadow-2xl p-8 mt-6">
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-3xl font-bold text-gray-800">
-                            <i className="fas fa-plus-circle text-green-600 mr-3"></i>Add New Record
+                            <i className="fas fa-plus-circle text-green-600 mr-3"></i>{isEditing ? 'Edit Record' : 'Add New Record'}
                         </h2>
-                        <button 
-                            onClick={() => setCurrentView('dashboard')}
+                        <button
+                            onClick={isEditing ? handleCancelEdit : () => setCurrentView('dashboard')}
                             className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all duration-300"
                         >
-                            <i className="fas fa-arrow-left mr-2"></i>Back
+                            <i className="fas fa-arrow-left mr-2"></i>{isEditing ? 'Cancel' : 'Back'}
                         </button>
                     </div>
-                    
+
                     <div className="space-y-8">
-                        {/* Customer Details */}
                         <div className="customer-card rounded-2xl p-6 text-white">
                             <h3 className="text-2xl font-bold mb-6 flex items-center">
                                 <i className="fas fa-user-circle mr-3"></i>Customer Details
@@ -495,56 +533,56 @@ function App() {
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Name *</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="customer_name"
                                         value={newEntryFormData.customer_name}
                                         onChange={handleNewEntryChange}
-                                        className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-blue-500 focus:outline-none transition-all duration-300" 
+                                        className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-blue-500 focus:outline-none transition-all duration-300"
+                                        required
                                     />
                                 </div>
                                 <div>
-                                    {/* Changed from Father's Name to Comment */}
                                     <label className="block text-sm font-medium mb-2">Comment</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="comment"
                                         value={newEntryFormData.comment}
                                         onChange={handleNewEntryChange}
-                                        className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-blue-500 focus:outline-none transition-all duration-300" 
+                                        className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-blue-500 focus:outline-none transition-all duration-300"
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Village/City *</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="village"
                                         value={newEntryFormData.village}
                                         onChange={handleNewEntryChange}
-                                        className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-blue-500 focus:outline-none transition-all duration-300" 
+                                        className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-blue-500 focus:outline-none transition-all duration-300"
+                                        required
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Mobile Number</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="mobile"
                                         value={newEntryFormData.mobile}
                                         onChange={handleNewEntryChange}
-                                        className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-blue-500 focus:outline-none transition-all duration-300" 
+                                        className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-blue-500 focus:outline-none transition-all duration-300"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        {/* Item Details - Multiple entries */}
                         {newEntryItems.map((item, index) => (
                             <div key={index} className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-6 text-white relative">
                                 <h3 className="text-2xl font-bold mb-6 flex items-center">
                                     <i className="fas fa-gem mr-3"></i>Item Details {newEntryItems.length > 1 && `(${index + 1})`}
                                 </h3>
                                 {newEntryItems.length > 1 && (
-                                    <button 
+                                    <button
                                         onClick={() => handleRemoveItem(index)}
                                         className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-all duration-300 transform hover:scale-110"
                                     >
@@ -554,7 +592,7 @@ function App() {
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Item Type</label>
-                                        <select 
+                                        <select
                                             value={item.itemType}
                                             onChange={(e) => handleNewItemChange(index, 'itemType', e.target.value)}
                                             className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-yellow-500 focus:outline-none transition-all duration-300"
@@ -566,53 +604,50 @@ function App() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Item Name *</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             placeholder="e.g., Chain, Ring, Payal"
                                             value={item.itemName}
                                             onChange={(e) => handleNewItemChange(index, 'itemName', e.target.value)}
-                                            className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-yellow-500 focus:outline-none transition-all duration-300" 
+                                            className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-yellow-500 focus:outline-none transition-all duration-300"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Weight (grams) *</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             value={item.weight}
                                             onChange={(e) => handleNewItemChange(index, 'weight', e.target.value)}
-                                            className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-yellow-500 focus:outline-none transition-all duration-300" 
+                                            className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-yellow-500 focus:outline-none transition-all duration-300"
                                         />
                                     </div>
                                 </div>
                             </div>
                         ))}
 
-                        {/* Add Item Button */}
-                        <button 
+                        <button
                             onClick={handleAddItem}
                             className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
                         >
                             <i className="fas fa-plus mr-2"></i>Add More Item
                         </button>
 
-                        {/* Common Amount Given */}
                         <div className="bg-gradient-to-r from-purple-400 to-pink-500 rounded-2xl p-6 text-white">
                             <h3 className="text-2xl font-bold mb-6 flex items-center">
                                 <i className="fas fa-rupee-sign mr-3"></i>Total Amount Given
                             </h3>
                             <div>
                                 <label className="block text-sm font-medium mb-2">Amount (₹)</label>
-                                <input 
-                                    type="number" 
+                                <input
+                                    type="number"
                                     name="amount"
                                     value={newEntryFormData.amount}
                                     onChange={handleNewEntryChange}
-                                    className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-purple-500 focus:outline-none transition-all duration-300" 
+                                    className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-purple-500 focus:outline-none transition-all duration-300"
                                 />
                             </div>
                         </div>
 
-                        {/* Date Details */}
                         <div className="bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl p-6 text-white">
                             <h3 className="text-2xl font-bold mb-6 flex items-center">
                                 <i className="fas fa-calendar-alt mr-3"></i>Date Details *
@@ -620,11 +655,12 @@ function App() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Year</label>
-                                    <select 
+                                    <select
                                         name="year"
                                         value={newEntryFormData.year}
                                         onChange={handleNewEntryChange}
                                         className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-green-500 focus:outline-none transition-all duration-300"
+                                        required
                                     >
                                         <option value="">Select Year</option>
                                         {years.map(year => <option key={year} value={year}>{year}</option>)}
@@ -632,11 +668,12 @@ function App() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Month</label>
-                                    <select 
+                                    <select
                                         name="month"
                                         value={newEntryFormData.month}
                                         onChange={handleNewEntryChange}
                                         className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-green-500 focus:outline-none transition-all duration-300"
+                                        required
                                     >
                                         <option value="">Select Month / महीना चुनें</option>
                                         {months.map(month => <option key={month.en} value={month.en}>{month.en} / {month.hi}</option>)}
@@ -644,11 +681,12 @@ function App() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Paksha</label>
-                                    <select 
+                                    <select
                                         name="paksha"
                                         value={newEntryFormData.paksha}
                                         onChange={handleNewEntryChange}
                                         className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-green-500 focus:outline-none transition-all duration-300"
+                                        required
                                     >
                                         <option value="">Select Paksha / पक्ष चुनें</option>
                                         {pakshas.map(paksha => <option key={paksha.en} value={paksha.en}>{paksha.en} / {paksha.hi}</option>)}
@@ -656,11 +694,12 @@ function App() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Tithi</label>
-                                    <select 
+                                    <select
                                         name="tithi"
                                         value={newEntryFormData.tithi}
                                         onChange={handleNewEntryChange}
                                         className="w-full p-3 rounded-lg text-gray-800 border-2 focus:border-green-500 focus:outline-none transition-all duration-300"
+                                        required
                                     >
                                         <option value="">Select Tithi / तिथि चुनें</option>
                                         {tithis.map(tithi => <option key={tithi.en} value={tithi.en}>{tithi.en} / {tithi.hi}</option>)}
@@ -669,11 +708,11 @@ function App() {
                             </div>
                         </div>
 
-                        <button 
+                        <button
                             onClick={handleSaveEntry}
                             className="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white py-4 rounded-xl text-xl font-bold hover:from-green-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
                         >
-                            <i className="fas fa-save mr-3"></i>Save Record
+                            <i className="fas fa-save mr-3"></i>{isEditing ? 'Update Record' : 'Save Record'}
                         </button>
                     </div>
                 </div>
@@ -691,7 +730,7 @@ function App() {
                             <h2 className="text-3xl font-bold text-gray-800 flex items-center">
                                 <i className="fas fa-table text-indigo-600 mr-3"></i>Existing Records
                             </h2>
-                            <button 
+                            <button
                                 onClick={() => setCurrentView('dashboard')}
                                 className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all duration-300"
                             >
@@ -699,13 +738,12 @@ function App() {
                             </button>
                         </div>
 
-                        {/* Filters */}
                         <div className="filter-card rounded-2xl p-6 mb-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-xl font-bold text-gray-800 flex items-center">
                                     <i className="fas fa-filter text-pink-600 mr-2"></i>Filters
                                 </h3>
-                                <button 
+                                <button
                                     onClick={resetFilters}
                                     className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition-all duration-300"
                                 >
@@ -713,21 +751,21 @@ function App() {
                                 </button>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     placeholder="Filter by Customer Name"
                                     value={filters.customerName}
                                     onChange={(e) => setFilters({...filters, customerName: e.target.value})}
                                     className="p-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:outline-none transition-all duration-300"
                                 />
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     placeholder="Filter by Village/City"
                                     value={filters.village}
                                     onChange={(e) => setFilters({...filters, village: e.target.value})}
                                     className="p-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:outline-none transition-all duration-300"
                                 />
-                                <select 
+                                <select
                                     value={filters.itemType}
                                     onChange={(e) => setFilters({...filters, itemType: e.target.value})}
                                     className="p-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:outline-none transition-all duration-300"
@@ -736,14 +774,14 @@ function App() {
                                     <option value="Gold">Gold</option>
                                     <option value="Silver">Silver</option>
                                 </select>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     placeholder="Filter by Item Name"
                                     value={filters.itemName}
                                     onChange={(e) => setFilters({...filters, itemName: e.target.value})}
                                     className="p-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:outline-none transition-all duration-300"
                                 />
-                                <select 
+                                <select
                                     value={filters.year}
                                     onChange={(e) => setFilters({...filters, year: e.target.value})}
                                     className="p-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:outline-none transition-all duration-300"
@@ -751,7 +789,7 @@ function App() {
                                     <option value="">All Years</option>
                                     {years.map(year => <option key={year} value={year}>{year}</option>)}
                                 </select>
-                                <select 
+                                <select
                                     value={filters.month}
                                     onChange={(e) => setFilters({...filters, month: e.target.value})}
                                     className="p-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:outline-none transition-all duration-300"
@@ -759,7 +797,7 @@ function App() {
                                     <option value="">All Months / सभी महीने</option>
                                     {months.map(month => <option key={month.en} value={month.en}>{month.en} / {month.hi}</option>)}
                                 </select>
-                                <select 
+                                <select
                                     value={filters.paksha}
                                     onChange={(e) => setFilters({...filters, paksha: e.target.value})}
                                     className="p-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:outline-none transition-all duration-300"
@@ -767,7 +805,7 @@ function App() {
                                     <option value="">All Paksha / सभी पक्ष</option>
                                     {pakshas.map(paksha => <option key={paksha.en} value={paksha.en}>{paksha.en} / {paksha.hi}</option>)}
                                 </select>
-                                <select 
+                                <select
                                     value={filters.tithi}
                                     onChange={(e) => setFilters({...filters, tithi: e.target.value})}
                                     className="p-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 focus:outline-none transition-all duration-300"
@@ -779,7 +817,6 @@ function App() {
                         </div>
                     </div>
 
-                    {/* Table */}
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="table-header text-white">
@@ -790,23 +827,21 @@ function App() {
                                     <th className="p-4 text-left">Weight (g)</th>
                                     <th className="p-4 text-left">Amount</th>
                                     <th className="p-4 text-left">Date</th>
-                                    <th className="p-4 text-left">Mobile</th>
                                     <th className="p-4 text-left">Item Type</th>
-                                    <th className="p-4 text-left">Comment</th> {/* Changed from Father's Name to Comment and moved to last */}
+                                    <th className="p-4 text-left">Comment</th>
+                                    <th className="p-4 text-left">Mobile</th>
+                                    <th className="p-4 text-left">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredData.map((item, index) => {
-                                    // Display only the first two item names in the column
                                     const displayItems = item.items.slice(0, 2).map(i => i.itemName);
                                     const hasMoreItems = item.items.length > 2;
 
-                                    // Determine itemType for display: "Mixed" if multiple types, else the first item's type
-                                    const displayItemType = item.items.length > 1 && new Set(item.items.map(i => i.itemType)).size > 1 
-                                                            ? 'Mixed' 
+                                    const displayItemType = item.items.length > 1 && new Set(item.items.map(i => i.itemType)).size > 1
+                                                            ? 'Mixed'
                                                             : item.items[0]?.itemType || '';
-                                    
-                                    // Calculate total gold and silver weights separately
+
                                     let totalGoldWeight = 0;
                                     let totalSilverWeight = 0;
                                     item.items.forEach(singleItem => {
@@ -822,11 +857,10 @@ function App() {
                                     if (totalGoldWeight > 0 && totalSilverWeight > 0) {
                                         weightDisplay = `Gold: ${totalGoldWeight.toFixed(1)}g, Silver: ${totalSilverWeight.toFixed(1)}g`;
                                     } else if (totalGoldWeight > 0) {
-                                        weightDisplay = `${totalGoldWeight.toFixed(1)}g`; // Only Gold
+                                        weightDisplay = `${totalGoldWeight.toFixed(1)}g`;
                                     } else if (totalSilverWeight > 0) {
-                                        weightDisplay = `${totalSilverWeight.toFixed(1)}g`; // Only Silver
+                                        weightDisplay = `${totalSilverWeight.toFixed(1)}g`;
                                     }
-
 
                                     return (
                                         <tr key={index} className="border-b hover:bg-gray-50 transition-colors duration-200">
@@ -839,10 +873,9 @@ function App() {
                                                 </span>
                                             </td>
                                             <td className="p-4 font-medium text-gray-800">
-                                                {/* Displaying only item name here */}
                                                 {displayItems.join(', ')}
                                                 {hasMoreItems && (
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleViewMoreClick(item.items)}
                                                         className="text-blue-500 hover:text-blue-700 ml-2 font-semibold"
                                                     >
@@ -850,7 +883,7 @@ function App() {
                                                     </button>
                                                 )}
                                             </td>
-                                            <td className="p-4 font-semibold text-green-600">{weightDisplay}</td> {/* Display separate gold/silver weights */}
+                                            <td className="p-4 font-semibold text-green-600">{weightDisplay}</td>
                                             <td className="p-4 font-semibold text-purple-600">₹{item.amount.toLocaleString()}</td>
                                             <td className="p-4">
                                                 <div className="text-sm">
@@ -858,15 +891,29 @@ function App() {
                                                     <div className="text-gray-600">{item.paksha} {item.tithi}</div>
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-gray-600">{item.mobile}</td>
                                             <td className="p-4">
-                                                <span className={`px-3 py-1 rounded-full text-sm font-bold 
-                                                    ${displayItemType === 'Gold' ? 'item-badge-gold' : 
-                                                    (displayItemType === 'Silver' ? 'item-badge-silver' : 'item-badge-mixed')}`}> {/* Changed class for 'Mixed' */}
+                                                <span className={`px-3 py-1 rounded-full text-sm font-bold
+                                                    ${displayItemType === 'Gold' ? 'item-badge-gold' :
+                                                    (displayItemType === 'Silver' ? 'item-badge-silver' : 'item-badge-mixed')}`}>
                                                     {displayItemType}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-gray-600">{item.comment}</td> {/* This is now the 'Comment' column */}
+                                            <td className="p-4 text-gray-600">{item.comment}</td>
+                                            <td className="p-4 text-gray-600">{item.mobile}</td>
+                                            <td className="p-4">
+                                                <button
+                                                    onClick={() => startEdit(item)}
+                                                    className="text-indigo-600 hover:text-indigo-900 mr-2"
+                                                >
+                                                    <i className="fas fa-edit"></i> Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="text-red-600 hover:text-red-900"
+                                                >
+                                                    <i className="fas fa-trash-alt"></i> Delete
+                                                </button>
+                                            </td>
                                         </tr>
                                     );
                                 })}
@@ -884,7 +931,6 @@ function App() {
         </div>
     );
 
-    // Item Details Modal
     const renderItemDetailsModal = () => (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn">
             <div ref={modalRef} className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300">
@@ -895,7 +941,6 @@ function App() {
                     </button>
                 </div>
                 <ul className="list-disc list-inside space-y-2 text-gray-700">
-                    {/* Display item name and weight together */}
                     {currentItemNamesAndWeights.map((item, index) => (
                         <li key={index} className="bg-gray-100 p-2 rounded-lg">{item}</li>
                     ))}
@@ -912,7 +957,7 @@ function App() {
             {currentView === 'dashboard' && renderDashboard()}
             {currentView === 'newEntry' && renderNewEntry()}
             {currentView === 'viewEntries' && renderViewEntries()}
-            
+
             {showPopup && (
                 <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideIn">
                     <i className="fas fa-check-circle mr-2"></i>
