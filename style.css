@@ -56,3 +56,10 @@
 .table-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
+button.w-full {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  color: white !important;
+  background-color: #4f46e5 !important; /* Tailwind's indigo-600 */
+}
+
