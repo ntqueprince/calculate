@@ -349,14 +349,23 @@ function App() {
                         <h1 className="text-xl font-bold">Jewelry Records</h1>
                     </div>
                 </div>
-                {isLoggedIn && (
+
+                <div className="flex items-center space-x-4">
                     <button
-                        onClick={handleLogout}
-                        className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105"
+                        onClick={() => window.open('https://ntqueprince.github.io/cal/', '_blank')}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105"
                     >
-                        <i className="fas fa-sign-out-alt mr-2"></i>Logout
+                        <i className="fas fa-calculator mr-2"></i>Open Interest Calculator
                     </button>
-                )}
+                    {isLoggedIn && (
+                        <button
+                            onClick={handleLogout}
+                            className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105"
+                        >
+                            <i className="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    )}
+                </div>
             </div>
         </header>
     );
@@ -977,4 +986,3 @@ function App() {
 }
 
 ReactDOM.render(<App />, document.getElementById('root'));
-
